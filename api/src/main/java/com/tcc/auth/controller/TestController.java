@@ -8,7 +8,7 @@ public class TestController {
 
     @GetMapping({"/", ""})
     public String toString() {
-        return "TestController [GABRIEL E PEDRO ESTÃO OUVINDO BRITNEY SPEARS]";
+        return "FYNCO IS ALIVE! 🚀";
     }
     
 }
