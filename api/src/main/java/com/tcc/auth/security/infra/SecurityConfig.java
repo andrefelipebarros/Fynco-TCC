@@ -6,20 +6,25 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegRep) throws Exception {
         http.authorizeHttpRequests(auth -> auth
             .requestMatchers("/h2-console/**").permitAll()
             .requestMatchers("/api/**").authenticated() 
             .anyRequest().authenticated()
         )
             .oauth2Login(Customizer.withDefaults())
-            .formLogin(Customizer.withDefaults());
+            .logout(logout -> logout
+                .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegRep))
+            );
+            // .formLogin(Customizer.withDefaults()); SPRING SECURITY LOGIN
 
             // H2 CONFIG //
             http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
@@ -27,5 +32,12 @@ public class SecurityConfig {
             //////////////
         return http.build();
 
+    }
+    //
+    private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegRep) {
+        OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
+        // Define para qual URL o usuário será redirecionado APÓS o logout no provedor
+        successHandler.setPostLogoutRedirectUri("http://localhost:8080/");
+        return successHandler;
     }
 }
