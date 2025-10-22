@@ -16,6 +16,10 @@ public class FiiService {
 
     private final FiiRepository fiiRepository;
 
+    public FiiService(FiiRepository fiiRepository) {
+        this.fiiRepository = fiiRepository;
+    }
+
     public List<FiiResponse> listarTodos() {
         return fiiRepository.findAll()
                 .stream()
