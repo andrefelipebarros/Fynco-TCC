@@ -30,6 +30,9 @@ public class Fii {
     @Column(name = "preco_atual", nullable = false)
     private Double precoAtual;
 
+    @Column(name = "preco_anterior")
+    private Double precoAnterior;
+
     @Column(nullable = false)
     private Double dy; // Dividend Yield
 
