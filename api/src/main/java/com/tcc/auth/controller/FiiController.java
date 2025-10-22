@@ -17,7 +17,7 @@ public class FiiController {
 
     private final FiiService fiiService;
 
-    @GetMapping
+    @GetMapping("/", "")
     public ResponseEntity<List<FiiResponse>> listarTodos() {
         List<FiiResponse> fiis = fiiService.listarTodos();
         return ResponseEntity.ok(fiis);
