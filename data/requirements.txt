@@ -1,0 +1,2 @@
+yfinance
+psycopg2-binary
