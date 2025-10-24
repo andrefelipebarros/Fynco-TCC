@@ -1,214 +1,110 @@
 # Fynco-TCC
-Esse repositório tem como prioridade o Trabalho de Conclusão de Curso (TCC).
 
-Projeto de backend para o TCC "Fynco" — aplicação desenvolvida em Java 17, Spring Boot, com autenticação OAuth2 e banco de dados PostgreSQL.
+![Badge de Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 
----
+API backend para o projeto Fynco, um aplicativo de auxílio a investimentos no mercado financeiro brasileiro (com foco em Fundos Imobiliários), desenvolvido como Trabalho de Conclusão de Curso.
 
-## Sumário
+## 📋 Índice
 
-- [Visão geral](#visão-geral)  
-- [Tecnologias](#tecnologias)  
-- [Estrutura do repositório](#estrutura-do-repositório)  
-- [Pré-requisitos](#pré-requisitos)  
-- [Configuração do banco de dados](#configuração-do-banco-de-dados)  
-- [Configuração de ambiente](#configuração-de-ambiente)  
-- [Construção e execução](#construção-e-execução)  
-- [Endpoints (exemplos)](#endpoints-exemplos)  
-- [Testes](#testes)  
-- [Uso com Docker / docker-compose](#uso-com-docker--docker-compose)  
-- [Contribuições](#contribuições)  
-- [Licença](#licença)  
+-   [Sobre o Projeto](#sobre-o-projeto)
+-   [Tecnologias Utilizadas](#tecnologias-utilizadas)
+-   [Funcionalidades](#funcionalidades)
+-   [Como Executar](#como-executar)
+-   [Endpoints da API](#endpoints-da-api)
+-   [Licença](#licença)
 
----
+## 📖 Sobre o Projeto
 
-## Visão geral
+O Fynco é um sistema projetado para centralizar e analisar investimentos em FIIs, fornecendo recomendações e alertas personalizados para auxiliar o usuário em suas decisões financeiras. Este repositório contém a API REST (backend) que serve como o cérebro da aplicação, gerenciando usuários, dados de investimentos e notificações.
 
-Este repositório contém o backend da aplicação Fynco, parte do Trabalho de Conclusão de Curso (TCC). A API é implementada em **Java 17** usando **Spring Boot**, com autenticação por **OAuth2** e persistência em **PostgreSQL**.  
+## 🚀 Tecnologias Utilizadas
 
-A pasta **`api/`** contém todo o código-fonte da aplicação backend.
+Este projeto foi desenvolvido utilizando as seguintes tecnologias:
 
----
+-   **Backend:**
+    -   Java [ex: 17+]
+    -   Spring Boot
+    -   Spring Security (com OAuth2)
+    -   Spring Data JPA / Hibernate
+-   **Banco de Dados:**
+    -   [ex: H2 (para desenvolvimento)]
+    -   [ex: PostgreSQL (para produção)]
+-   **Gerenciamento de Dependências:**
+    -   Maven
+-   **Outras bibliotecas:**
+    -   `web-push` (para Notificações Push)
+    -   [ex: Lombok, MapStruct, etc.]
 
-## Tecnologias
+## ✨ Funcionalidades
 
-- Java 17  
-- Spring Boot  
-- Maven  
-- OAuth2 (fluxos de autorização / autenticação)  
-- PostgreSQL  
-- Docker / Docker Compose (opcional)  
+-   [✅] Autenticação e Autorização de usuários via OAuth2
+-   [✅] CRUD de Perfil de Usuário
+-   [✅] Listagem de Fundos Imobiliários (FIIs)
+-   [✅] Inscrição para Notificações Push
+-   [⏳] [Funcionalidade em desenvolvimento, ex: Geração de relatórios]
+-   [❌] [Funcionalidade planejada, ex: Alertas de dividendos]
 
----
+## 🏁 Como Executar
 
-## Estrutura do repositório
+Siga os passos abaixo para executar o projeto localmente:
 
-Uma visão simplificada da estrutura esperada:
+### Pré-requisitos
 
-```
+-   Java JDK [ex: 17 ou superior]
+-   Apache Maven
+-   [Seu SGBD, ex: PostgreSQL, ou nenhum se estiver usando H2]
 
-Fynco-TCC/
-├── api/
-│   ├── src/
-│   ├── pom.xml
-│   └── ... (configurações Spring, controladores, serviços etc.)
-├── data/ (opcional: scripts SQL, migrações)
-├── .github/ (workflows, ações)
-└── README.md
+### 1. Clonar o Repositório
 
+```bash
+git clone [https://github.com/andrefelipebarros/Fynco-TCC.git](https://github.com/andrefelipebarros/Fynco-TCC.git)
+cd Fynco-TCC
 ````
 
-A pasta `api/` é o núcleo da aplicação backend.
+### 2\. Configurar Variáveis de Ambiente
 
----
+Se seu projeto usar um arquivo `application.properties` ou `application.yml` que precise de senhas ou chaves de API, configure-as.
 
-## Pré-requisitos
-
-Antes de rodar o projeto localmente, você vai precisar:
-
-- Java 17 instalado  
-- Maven instalado  
-- PostgreSQL rodando (local ou remoto)  
-- Git  
-
----
-
-## Configuração do banco de dados
-
-Crie um banco e usuário no PostgreSQL para o projeto. Exemplo:
-
-```sql
-CREATE DATABASE fynco_db;
-CREATE USER fynco_user WITH PASSWORD 'sua_senha';
-GRANT ALL PRIVILEGES ON DATABASE fynco_db TO fynco_user;
-````
-
-Ajuste os nomes conforme seu uso local.
-
----
-
-## Configuração de ambiente
-
-Você precisará definir algumas propriedades no **application.properties** ou **application.yml**, ou via variáveis de ambiente. Exemplo de variáveis que podem existir:
+[**Exemplo:** Se você usa um banco de dados externo]
 
 ```properties
+# Em src/main/resources/application.properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/fynco_db
-spring.datasource.username=fynco_user
-spring.datasource.password=sua_senha
+spring.datasource.username=[SEU_USUARIO]
+spring.datasource.password=[SUA_SENHA]
 
-# Configurações de OAuth2
-oauth2.client-id=SEU_CLIENT_ID
-oauth2.client-secret=SEU_CLIENT_SECRET
-oauth2.issuer-uri=https://seu-servidor-oauth
-
-# Perfil ativo
-spring.profiles.active=dev
+# Configurações do OAuth2 (ex: Google)
+spring.security.oauth2.client.registration.google.client-id=[SEU_CLIENT_ID]
+spring.security.oauth2.client.registration.google.client-secret=[SEU_CLIENT_SECRET]
 ```
 
-Se usar variáveis de ambiente:
+### 3\. Executar a Aplicação
+
+Você pode executar a aplicação usando o wrapper do Maven:
 
 ```bash
-export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/fynco_db"
-export SPRING_DATASOURCE_USERNAME="fynco_user"
-export SPRING_DATASOURCE_PASSWORD="sua_senha"
-export OAUTH2_CLIENT_ID="SEU_CLIENT_ID"
-export OAUTH2_CLIENT_SECRET="SEU_CLIENT_SECRET"
-export OAUTH2_ISSUER_URI="https://seu-servidor-oauth"
-export SPRING_PROFILES_ACTIVE="dev"
+# Para Windows
+./mvnw spring-boot:run
+
+# Para Linux/Mac
+./mvnw spring-boot:run
 ```
 
----
+A aplicação estará disponível em `http://localhost:8080` (ou a porta que você configurou).
 
-## Construção e execução
+## ⚡ Endpoints da API
 
-No terminal:
+Aqui está uma descrição dos principais endpoints da aplicação, baseados nos controllers do projeto:
 
-```bash
-cd api
-mvn clean package
-mvn spring-boot:run
-```
+| Método | Endpoint | Controller | Descrição | Acesso |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/fiis` | `FiiController` | Lista todos os Fundos Imobiliários (FIIs). | Privado |
+| `POST` | `/api/user/profile` | `UserController` | Salva ou atualiza o perfil do usuário autenticado. | Privado |
+| `POST` | `/subscribe` | `NotificationController` | Inscreve o cliente (navegador) para receber notificações push. | Privado |
+| `POST` | `/send-notification` | `NotificationController` | [Admin/Debug] Envia uma notificação para todos os clientes inscritos. | Privado |
 
-Ou, direto:
+*(**Nota:** Os endpoints de autenticação, como `/login/oauth2/code/google`, são gerenciados pelo Spring Security e não estão listados aqui.)*
 
-```bash
-cd api
-mvn spring-boot:run
-```
+## 📄 Licença
 
-Por padrão, a aplicação ficará acessível em `http://localhost:8080` (ou outra porta, conforme sua configuração).
-
----
-
-## Endpoints (exemplos)
-
-Não encontrei ainda uma documentação completa dos endpoints, então aqui vão exemplos genéricos:
-
-* **/oauth2/authorize** — endpoint de autorização
-* **/oauth2/token** — emissão de tokens
-* **/api/...** — endpoints protegidos da API da aplicação
-
-Recomendo integrar Swagger / OpenAPI para gerar documentação automática da API.
-
----
-
-## Testes
-
-Para rodar os testes:
-
-```bash
-cd api
-mvn test
-```
-
-É interessante incluir testes de integração usando um banco PostgreSQL (ou usar ferramentas como Testcontainers para isolar o ambiente de teste).
-
----
-
-## Uso com Docker / docker-compose (opcional)
-
-Você pode definir um `docker-compose.yml` para orquestrar um container PostgreSQL + a aplicação:
-
-```yaml
-version: "3.8"
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: fynco_db
-      POSTGRES_USER: fynco_user
-      POSTGRES_PASSWORD: sua_senha
-    ports:
-      - "5432:5432"
-
-  app:
-    build:
-      context: ./api
-    depends_on:
-      - postgres
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fynco_db
-      SPRING_DATASOURCE_USERNAME: fynco_user
-      SPRING_DATASOURCE_PASSWORD: sua_senha
-    ports:
-      - "8080:8080"
-```
-
-Com esse setup, basta `docker-compose up --build` na raiz do repositório.
-
----
-
-## Contribuições
-
-Se quiser colaborar:
-
-1. Abra uma *issue* descrevendo a ideia ou bug.
-2. Crie uma branch (`feature/nome-da-feature`, `fix/descrição`).
-3. Faça suas alterações com commits claros.
-4. Abra um Pull Request e aguarde revisão.
-
----
-
-## Licença
-
-Este projeto está licenciado sob a **MIT License**.
+Este projeto está sob a licença [Nome da Licença, ex: MIT]. Veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
