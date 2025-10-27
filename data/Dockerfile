@@ -1,19 +1,28 @@
-# 1. Use a imagem base oficial do AWS Lambda para Python 3.9
-FROM public.ecr.aws/lambda/python:3.9
+# 1. Use a imagem base oficial do AWS Lambda para Python 3.10
+FROM public.ecr.aws/lambda/python:3.10
 
-# 2. Copie o arquivo de dependências para dentro da imagem
+# 2. Instala o 'zip'
+RUN yum install -y zip
+
+# 3. Cria um diretório de trabalho temporário
+WORKDIR /build
+
+# 4. Copia o arquivo de dependências para o /build
 COPY requirements.txt .
 
-# 3. Instale as dependências.
-# O '-t .' é a parte mais importante: ele instala as bibliotecas
-# na pasta ATUAL ('.') em vez de no site-packages do sistema.
-RUN pip install -r requirements.txt -t .
+# 5. Cria o diretório do pacote final (um local limpo)
+RUN mkdir /pkg
 
-# 4. Copie o seu código Python para dentro da imagem
-COPY lambda_function.py .
+# 6. Instala as dependências DENTRO do diretório /pkg
+RUN pip install -r requirements.txt -t /pkg
 
-# 5. O comando final que será executado quando rodarmos o 'build.sh'.
-# Ele zera tudo que está na pasta (seu código + as libs instaladas)
-# e salva em /dist/lambda.zip. A pasta /dist será "mapeada"
-# para a pasta 'dist' no seu computador.
-CMD [ "sh", "-c", "zip -r /dist/lambda.zip ." ]
+# 7. Copia o seu código Python DENTRO do diretório /pkg
+COPY lambda_function.py /pkg
+
+# 8. Anula o "Entrypoint" padrão da imagem base.
+ENTRYPOINT [""]
+
+# 9. O comando final 
+#    - 'cd /pkg' : Entra na pasta limpa /pkg
+#    - 'zip -r ...' : Zipa o CONTEÚDO dessa pasta
+CMD [ "sh", "-c", "cd /pkg && zip -9 -r /dist/lambda.zip ." ]
