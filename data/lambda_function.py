@@ -1,14 +1,16 @@
+import os
+import sys
 import yfinance as yf
 import psycopg2
-import sys
-import os # Importar a biblioteca 'os'
+from psycopg2 import sql
+from psycopg2 import errors
 
 # ============================
-# CONFIGURAÇÃO DO BANCO (LENDO DAS VARIÁVEIS DE AMBIENTE)
+# CONFIGURAÇÃO DO BANCO (VARIÁVEIS DE AMBIENTE)
 # ============================
 DB_CONFIG = {
     "host": os.environ.get('DB_HOST'),
-    "port": int(os.environ.get('DB_PORT', 5432)), # 5432 como padrão
+    "port": int(os.environ.get('DB_PORT', 5432)),
     "database": os.environ.get('DB_NAME'),
     "user": os.environ.get('DB_USER'),
     "password": os.environ.get('DB_PASSWORD')
@@ -23,55 +25,82 @@ FIIS = {
     "AGRESSIVE": ["MXRF11.SA", "BTHF11.SA", "KNRI11.SA", "HGLG11.SA", "XPML11.SA", "WEGE3.SA", "LREN3.SA", "MGLU3.SA"]
 }
 
-NOME_DA_TABELA = "fiis" 
+NOME_DA_TABELA = "fiis"
 
-# ============================
-# FUNÇÃO HANDLER DO LAMBDA
-# ============================
+
 def lambda_handler(event, context):
-    """
-    Esta é a função que o AWS Lambda irá executar.
-    """
-    print("Iniciando a execução do Lambda...")
+    print("Iniciando execução do Lambda...")
     try:
         atualizar_ativos()
         print("Execução concluída com sucesso.")
-        return {
-            'statusCode': 200,
-            'body': 'Dados atualizados com sucesso!'
-        }
+        return {"statusCode": 200, "body": "Dados atualizados com sucesso!"}
     except Exception as e:
         print(f"ERRO FATAL na execução do Lambda: {e}", file=sys.stderr)
-        return {
-            'statusCode': 500,
-            'body': f'Erro ao executar a atualização: {e}'
-        }
+        return {"statusCode": 500, "body": f"Erro ao executar a atualização: {e}"}
+
 
 def atualizar_ativos():
-    """
-    Função principal.
-    """
     conn = None
+    cursor = None
     try:
-        # 1. CONECTAR AO BANCO DE DADOS
-        print("Conectando ao banco de dados...")
-        
-        # Validação se as variáveis de ambiente foram carregadas
+        # validação de variáveis de ambiente
         if not all([DB_CONFIG['host'], DB_CONFIG['database'], DB_CONFIG['user'], DB_CONFIG['password']]):
-            raise ValueError("Variáveis de ambiente do banco de dados (DB_HOST, DB_NAME, etc.) não estão configuradas.")
-            
+            raise ValueError("Variáveis de ambiente do banco não estão todas configuradas (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD).")
+
+        print("Conectando ao banco de dados...")
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         print("✅ Conexão bem-sucedida.")
 
-        # 2. LIMPAR (APAGAR) OS DADOS ATUAIS DA TABELA
-        print(f"\nLimpando a tabela '{NOME_DA_TABELA}'...")
-        cursor.execute(f"TRUNCATE TABLE {NOME_DA_TABELA} RESTART IDENTITY;")
-        print("✅ Tabela limpa.")
+        # 1) Ler preços atuais (preço 'anterior' para quando re-inserirmos) — caso a tabela exista
+        precos_antigos = {}
+        try:
+            select_q = sql.SQL("SELECT ticker, preco_atual FROM {}").format(sql.Identifier(NOME_DA_TABELA))
+            cursor.execute(select_q)
+            rows = cursor.fetchall()
+            for ticker, preco in rows:
+                precos_antigos[ticker] = preco
+            print(f"✅ {len(precos_antigos)} preços anteriores carregados da tabela.")
+        except Exception as e:
+            # Se a tabela não existir ou houver problema no SELECT, apenas logamos e seguimos com precos_antigos vazio
+            print(f"⚠️ Não foi possível ler preços anteriores (tabela pode não existir): {e}")
+            conn.rollback()
 
-        # 3. BUSCAR DADOS NA API E INSERIR NO BANCO
-        print("\nIniciando a busca e inserção de dados atualizados...")
-        
+        # 2) Certificar-se de que a coluna preco_anterior existe — se não existir, tenta adicionar
+        try:
+            if not coluna_existe(cursor, NOME_DA_TABELA, "preco_anterior"):
+                print("Coluna 'preco_anterior' não encontrada — tentando adicionar automaticamente.")
+                alter = sql.SQL("ALTER TABLE {} ADD COLUMN preco_anterior numeric;").format(sql.Identifier(NOME_DA_TABELA))
+                try:
+                    cursor.execute(alter)
+                    conn.commit()
+                    print("✅ Coluna 'preco_anterior' adicionada com sucesso.")
+                except Exception as alter_err:
+                    print(f"❌ Falha ao adicionar coluna 'preco_anterior': {alter_err} — iremos prosseguir sem alterar (inserção pode falhar se tentar inserir a coluna).")
+                    conn.rollback()
+            else:
+                print("Coluna 'preco_anterior' já existe.")
+        except Exception as e:
+            # Problema ao checar a tabela (possivelmente tabela não existe) — seguir em frente
+            print(f"⚠️ Erro ao verificar/alterar colunas: {e}")
+            conn.rollback()
+
+        # 3) Limpar a tabela
+        try:
+            print(f"\nLimpando a tabela '{NOME_DA_TABELA}'...")
+            truncate_q = sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY;").format(sql.Identifier(NOME_DA_TABELA))
+            cursor.execute(truncate_q)
+            print("✅ Tabela truncada.")
+        except Exception as e:
+            # Se a tabela não existir, criaremos uma tabela mínima (opcional) para evitar falha — logamos e criamos a tabela
+            print(f"⚠️ TRUNCATE falhou (a tabela pode não existir): {e}")
+            conn.rollback()
+            criar_tabela_minima(cursor, NOME_DA_TABELA)
+            conn.commit()
+            print("✅ Tabela criada (minimamente) para continuar o processo.")
+
+        # 4) Buscar dados via yfinance e inserir com preco_anterior vindo do dicionário precos_antigos
+        print("\nIniciando busca e inserção de dados atualizados...")
         for perfil, tickers in FIIS.items():
             print(f"\n--- Processando Perfil: {perfil} ---")
             for ticker_code in tickers:
@@ -86,36 +115,87 @@ def atualizar_ativos():
                     dy_fracao = ticker_info.get('dividendYield')
                     dy = dy_fracao * 100 if dy_fracao is not None else None
                     p_vp = ticker_info.get('priceToBook')
-                    
+
                     if preco_atual is None:
-                        print(f"⚠️ AVISO: Preço atual não encontrado para {ticker_code}. Inserção pulada.")
+                        print(f"⚠️ Preço atual não encontrado para {ticker_code}. Pulando.")
                         continue
-                        
-                    insert_query = f"""
-                        INSERT INTO {NOME_DA_TABELA} (ticker, nome, setor, preco_atual, dy, p_vp, perfil)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s);
-                    """
-                    dados_para_inserir = (ticker_code, nome, setor, preco_atual, dy, p_vp, perfil)
-                    
-                    cursor.execute(insert_query, dados_para_inserir)
-                    print(f"  -> Inserido: {ticker_code} | Preço: {preco_atual:.2f}")
+
+                    preco_anterior = precos_antigos.get(ticker_code)  # None se não existia antes
+
+                    # Query que tenta inserir incluindo preco_anterior
+                    insert_q = sql.SQL("""
+                        INSERT INTO {} (ticker, nome, setor, preco_atual, dy, p_vp, perfil, preco_anterior)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """).format(sql.Identifier(NOME_DA_TABELA))
+
+                    dados = (ticker_code, nome, setor, preco_atual, dy, p_vp, perfil, preco_anterior)
+
+                    try:
+                        cursor.execute(insert_q, dados)
+                    except Exception as ins_err:
+                        # Se falhar por coluna inexistente (ou outro motivo), tenta fallback sem preco_anterior
+                        print(f"⚠️ Inserção com 'preco_anterior' falhou: {ins_err} — tentando inserir sem a coluna.")
+                        conn.rollback()
+                        insert_fallback_q = sql.SQL("""
+                            INSERT INTO {} (ticker, nome, setor, preco_atual, dy, p_vp, perfil)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """).format(sql.Identifier(NOME_DA_TABELA))
+                        cursor.execute(insert_fallback_q, (ticker_code, nome, setor, preco_atual, dy, p_vp, perfil))
+
+                    preco_anterior_str = f"{preco_anterior:.2f}" if preco_anterior is not None else "N/A"
+                    print(f"  -> Inserido: {ticker_code} | Anterior: {preco_anterior_str} | Novo: {preco_atual:.2f}")
 
                 except Exception as e:
-                    print(f"❌ ERRO ao processar o ticker {ticker_code}: {e}", file=sys.stderr)
+                    print(f"❌ ERRO ao processar {ticker_code}: {e}", file=sys.stderr)
+                    conn.rollback()
 
-        # 4. CONFIRMAR (COMMIT) AS ALTERAÇÕES NO BANCO
+        # 5) Commit final
         conn.commit()
         print("\n✅ Operação finalizada com sucesso! Dados atualizados e salvos no banco.")
 
-    except (psycopg2.Error, ValueError) as e: 
+    except (psycopg2.Error, ValueError) as e:
         print(f"\n❌ ERRO CRÍTICO: {e}", file=sys.stderr)
         if conn:
             conn.rollback()
-        raise e 
-            
+        raise e
+
     finally:
-        # 5. FECHAR A CONEXÃO COM O BANCO
-        if conn:
+        if cursor:
             cursor.close()
+        if conn:
             conn.close()
             print("🔌 Conexão com o banco de dados fechada.")
+
+
+def coluna_existe(cursor, table_name, column_name):
+    """
+    Retorna True se a coluna existir na tabela (information_schema).
+    """
+    check_q = """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = %s AND column_name = %s;
+    """
+    cursor.execute(check_q, (table_name, column_name))
+    return cursor.fetchone() is not None
+
+
+def criar_tabela_minima(cursor, table_name):
+    """
+    Cria uma tabela mínima caso a tabela não exista.
+    Ajuste os tipos conforme sua modelagem real (aqui usei numeric para preços).
+    """
+    create_q = sql.SQL("""
+        CREATE TABLE IF NOT EXISTS {} (
+            id serial PRIMARY KEY,
+            ticker text UNIQUE,
+            nome text,
+            setor text,
+            preco_atual numeric,
+            dy numeric,
+            p_vp numeric,
+            perfil text,
+            preco_anterior numeric
+        );
+    """).format(sql.Identifier(table_name))
+    cursor.execute(create_q)
+    print(f"✅ Criada tabela mínima '{table_name}'.")
