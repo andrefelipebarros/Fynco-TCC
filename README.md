@@ -22,18 +22,20 @@ O Fynco é um sistema projetado para centralizar e analisar investimentos em FII
 Este projeto foi desenvolvido utilizando as seguintes tecnologias:
 
 -   **Backend:**
-    -   Java [ex: 17+]
+    -   Java 17+
     -   Spring Boot
     -   Spring Security (com OAuth2)
     -   Spring Data JPA / Hibernate
 -   **Banco de Dados:**
-    -   [ex: H2 (para desenvolvimento)]
-    -   [ex: PostgreSQL (para produção)]
+    -   H2 (para desenvolvimento)
+    -   PostgreSQL (para produção)
 -   **Gerenciamento de Dependências:**
     -   Maven
 -   **Outras bibliotecas:**
     -   `web-push` (para Notificações Push)
-    -   [ex: Lombok, MapStruct, etc.]
+    -   Lombok
+    -   MapStruct
+    -   Dentre outros
 
 ## ✨ Funcionalidades
 
@@ -41,8 +43,8 @@ Este projeto foi desenvolvido utilizando as seguintes tecnologias:
 -   [✅] CRUD de Perfil de Usuário
 -   [✅] Listagem de Fundos Imobiliários (FIIs)
 -   [✅] Inscrição para Notificações Push
--   [⏳] [Funcionalidade em desenvolvimento, ex: Geração de relatórios]
--   [❌] [Funcionalidade planejada, ex: Alertas de dividendos]
+-   [⏳] [Funcionalidade em desenvolvimento, Geração de relatórios
+-   [❌] [Funcionalidade planejada, Alertas de dividendos via e-mail
 
 ## 🏁 Como Executar
 
@@ -50,9 +52,9 @@ Siga os passos abaixo para executar o projeto localmente:
 
 ### Pré-requisitos
 
--   Java JDK [ex: 17 ou superior]
+-   Java JDK 17 ou superior
 -   Apache Maven
--   [Seu SGBD, ex: PostgreSQL, ou nenhum se estiver usando H2]
+-   Seu SGBD, PostgreSQL, ou nenhum se estiver usando H2
 
 ### 1. Clonar o Repositório
 
@@ -107,4 +109,4 @@ Aqui está uma descrição dos principais endpoints da aplicação, baseados nos
 
 ## 📄 Licença
 
-Este projeto está sob a licença [Nome da Licença, ex: MIT]. Veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
+Este projeto está sob a licença, MIT LICENSE(Temporário). Veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
