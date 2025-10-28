@@ -6,12 +6,12 @@ API backend para o projeto Fynco, um aplicativo de auxílio a investimentos no m
 
 ## 📋 Índice
 
--   [Sobre o Projeto](#sobre-o-projeto)
--   [Tecnologias Utilizadas](#tecnologias-utilizadas)
--   [Funcionalidades](#funcionalidades)
--   [Como Executar](#como-executar)
--   [Endpoints da API](#endpoints-da-api)
--   [Licença](#licença)
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Funcionalidades](#funcionalidades)
+- [Como Executar](#como-executar)
+- [Endpoints da API](#endpoints-da-api)
+- [Licença](#licença)
 
 ## 📖 Sobre o Projeto
 
@@ -21,30 +21,38 @@ O Fynco é um sistema projetado para centralizar e analisar investimentos em FII
 
 Este projeto foi desenvolvido utilizando as seguintes tecnologias:
 
--   **Backend:**
-    -   Java 17+
-    -   Spring Boot
-    -   Spring Security (com OAuth2)
-    -   Spring Data JPA / Hibernate
--   **Banco de Dados:**
-    -   H2 (para desenvolvimento)
-    -   PostgreSQL (para produção)
--   **Gerenciamento de Dependências:**
-    -   Maven
--   **Outras bibliotecas:**
-    -   `web-push` (para Notificações Push)
-    -   Lombok
-    -   MapStruct
-    -   Dentre outros
+### Backend & Frameworks
+<p align="left">
+  <img src="https://img.shields.io/badge/Java-17+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17+">
+  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring&logoColor=white" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white" alt="Spring Security">
+  <img src="https://img.shields.io/badge/Hibernate-573626?style=for-the-badge&logo=hibernate&logoColor=white" alt="Hibernate (JPA)">
+  <img src="https://img.shields.io/badge/OAuth2-24292E?style=for-the-badge&logo=oauth&logoColor=white" alt="OAuth2">
+</p>
+
+### Banco de Dados
+<p align="left">
+  <img src="https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/H2_Database-464646?style=for-the-badge&logo=h2&logoColor=white" alt="H2 Database">
+</p>
+
+### Build & Ferramentas
+<p align="left">
+  <img src="https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" alt="Maven">
+  <img src="https://img.shields.io/badge/Lombok-AF0E23?style=for-the-badge&logo=lombok&logoColor=white" alt="Lombok">
+  <img src="https://img.shields.io/badge/MapStruct-FF69B4?style=for-the-badge&logo=mapstruct&logoColor=white" alt="MapStruct">
+</p>
+
+*(Outras bibliotecas incluem `web-push` para Notificações Push, entre outras gerenciadas pelo Maven.)*
 
 ## ✨ Funcionalidades
 
--   [✅] Autenticação e Autorização de usuários via OAuth2
--   [✅] CRUD de Perfil de Usuário
--   [✅] Listagem de Fundos Imobiliários (FIIs)
--   [✅] Inscrição para Notificações Push
--   [⏳] [Funcionalidade em desenvolvimento, Geração de relatórios
--   [❌] [Funcionalidade planejada, Alertas de dividendos via e-mail
+- [✅] Autenticação e Autorização de usuários via OAuth2
+- [✅] CRUD de Perfil de Usuário
+- [✅] Listagem de Fundos Imobiliários (FIIs)
+- [✅] Inscrição para Notificações Push
+- [⏳] [Funcionalidade em desenvolvimento, Geração de relatórios
+- [❌] [Funcionalidade planejada, Alertas de dividendos via e-mail
 
 ## 🏁 Como Executar
 
@@ -52,9 +60,9 @@ Siga os passos abaixo para executar o projeto localmente:
 
 ### Pré-requisitos
 
--   Java JDK 17 ou superior
--   Apache Maven
--   Seu SGBD, PostgreSQL, ou nenhum se estiver usando H2
+- Java JDK 17 ou superior
+- Apache Maven
+- Seu SGBD, PostgreSQL, ou nenhum se estiver usando H2
 
 ### 1. Clonar o Repositório
 
