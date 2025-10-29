@@ -30,7 +30,13 @@ public class UserController {
     public ResponseEntity<ProfileResponse> saveOrUpdateProfile(
             @AuthenticationPrincipal OAuth2User oauth2User,
             @Valid @RequestBody ProfileRequest request) {
-
+            
+        System.out.println("DEBUG: oauth2User principal = " + oauth2User);
+        if (oauth2User != null) {
+            System.out.println("DEBUG: email = " + oauth2User.getAttribute("email"));
+        } else {
+            System.out.println("DEBUG: oauth2User is null!");
+        }
         String email = oauth2User.getAttribute("email");
         if (email == null) {
             return ResponseEntity.status(401).build();
