@@ -26,7 +26,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             <html>
               <body>
                 <script>
-                  window.opener.postMessage({ type: "OAUTH_SUCCESS" }, window.location.origin);
+                  window.opener.postMessage({ type: "OAUTH_SUCCESS", redirect: "/questionnaire" }, window.location.origin);
                   window.close();
                 </script>
               </body>
