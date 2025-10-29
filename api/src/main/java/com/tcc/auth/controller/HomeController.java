@@ -8,7 +8,7 @@ public class HomeController {
 
     @GetMapping({"/", ""})
     public String toString() {
-        return "FYNCO IS ALIVE! 🚀";
+        return "redirect:http://localhost:3000/questionnaire";
     }
     
 }
