@@ -1,7 +1,10 @@
 package com.tcc.auth.security.infra;
 
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -10,6 +13,9 @@ import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInit
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import com.tcc.auth.security.config.OAuth2SuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -23,11 +29,15 @@ public class SecurityConfig {
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegRep) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
-            .requestMatchers("/h2-console/**").permitAll()
-            .requestMatchers("/api/**").authenticated() 
-            .anyRequest().authenticated()
-        )
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/oauth2/**", "/login/**").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/api/**").authenticated() 
+                .anyRequest().authenticated()
+            )
             .oauth2Login(oauth -> {
                 oauth.successHandler(oAuth2SuccessHandler);
                 Customizer.withDefaults().customize(oauth);
@@ -43,6 +53,28 @@ public class SecurityConfig {
         return http.build();
 
     }
+    
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Permita a origem do seu frontend
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
+        
+        // Permita os métodos (INCLUINDO OPTIONS)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        // Permita os headers que você usa
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
+        
+        // ISSO É ESSENCIAL PARA AUTENTICAÇÃO
+        configuration.setAllowCredentials(true); 
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Aplica a todos os paths
+        return source;
+    }
+
     //
     private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegRep) {
         OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
