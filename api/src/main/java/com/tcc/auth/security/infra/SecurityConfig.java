@@ -20,11 +20,13 @@ public class SecurityConfig {
             .requestMatchers("/api/**").authenticated() 
             .anyRequest().authenticated()
         )
-            .oauth2Login(Customizer.withDefaults())
+            .oauth2Login(oauth -> {
+                oauth.successHandler(oAuth2SuccessHandler);
+                Customizer.withDefaults().customize(oauth);
+            })
             .logout(logout -> logout
                 .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegRep))
             );
-            // .formLogin(Customizer.withDefaults()); SPRING SECURITY LOGIN
 
             // H2 CONFIG //
             http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
