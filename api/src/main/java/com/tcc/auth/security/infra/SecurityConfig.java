@@ -9,7 +9,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import com.tcc.auth.security.infra.OAuth2SuccessHandler;
+import com.tcc.auth.security.config.OAuth2SuccessHandler;
 
 @Configuration
 @EnableWebSecurity
