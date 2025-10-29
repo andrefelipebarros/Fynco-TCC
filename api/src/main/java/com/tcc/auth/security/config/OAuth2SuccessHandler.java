@@ -20,13 +20,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         // Aqui você pode gerar um token se quiser
         // String token = jwtService.generateToken(authentication);
-
         String htmlResponse = """
             <!DOCTYPE html>
             <html>
               <body>
                 <script>
-                  window.opener.postMessage({ type: "OAUTH_SUCCESS", redirect: "/questionnaire" }, window.location.origin);
+                  window.opener.postMessage(
+                    { type: "OAUTH_SUCCESS", redirect: "/questionnaire" }, 
+                    "*" 
+                  );
                   window.close();
                 </script>
               </body>
