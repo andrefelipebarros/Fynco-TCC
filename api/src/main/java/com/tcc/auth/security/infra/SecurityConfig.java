@@ -23,26 +23,28 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
-
-    public SecurityConfig(OAuth2SuccessHandler oAuth2SuccessHandler) {
-        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+    public SecurityConfig() {
+        // no constructor injection
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegRep) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            ClientRegistrationRepository clientRegRep,
+            OAuth2SuccessHandler oAuth2SuccessHandler) throws Exception {
+
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // Ignora CSRF para H2
-            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // H2 console
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS para CORS
-                .requestMatchers("/oauth2/**", "/login/**", "/h2-console/**").permitAll() // Rotas públicas
-                .requestMatchers("/api/**").authenticated() // Rotas protegidas
-                .anyRequest().authenticated() // Qualquer outra rota também
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/oauth2/**", "/login/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> oauth
-                .successHandler(oAuth2SuccessHandler) // Handler customizado após login
+                .successHandler(oAuth2SuccessHandler)
             )
             .logout(logout -> logout
                 .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegRep))
@@ -56,10 +58,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Frontend
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
-        configuration.setAllowCredentials(true); // Essencial para autenticação com cookies/session
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -72,8 +74,9 @@ public class SecurityConfig {
     }
 
     private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegRep) {
-        OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
-        successHandler.setPostLogoutRedirectUri("http://localhost:3000/"); // Redireciona para o frontend
+        OidcClientInitiatedLogoutSuccessHandler successHandler =
+            new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
+        successHandler.setPostLogoutRedirectUri("http://localhost:3000/");
         return successHandler;
     }
 }
