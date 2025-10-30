@@ -27,14 +27,12 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         String email = oauthUser.getAttribute("email");
-        String name = oauthUser.getAttribute("name");
 
         Optional<User> existing = userService.findByEmail(email);
         if (existing.isEmpty()) {
-            // Cria usuário sem profile inicialmente (usando construtor padrão + setters)
+            // Cria usuário sem nome e perfil inicialmente (usando construtor padrão + setters)
             User newUser = new User();
             newUser.setEmail(email);
-            newUser.setNome(name);
             newUser.setCompletedQuestionnaire(false);
             userService.save(newUser);
         }

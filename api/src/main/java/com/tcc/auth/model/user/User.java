@@ -27,12 +27,12 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
-    private String nome;
+    @Column(nullable = true)
+    private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = true)
-    private InvestorProfile perfil;
+    private InvestorProfile profile;
 
     private boolean completedQuestionnaire = false;
 }

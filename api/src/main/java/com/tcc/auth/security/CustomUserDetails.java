@@ -25,10 +25,10 @@ public class CustomUserDetails implements OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (user != null && user.getPerfil() != null) {
+        if (user != null && user.getProfile() != null) {
             // Usuário completo: retorna o perfil real como autoridade
             // Ex: "CONSERVADOR" ou "ROLE_CONSERVADOR" (ajuste conforme sua necessidade)
-            return List.of(new SimpleGrantedAuthority(user.getPerfil().toString()));
+            return List.of(new SimpleGrantedAuthority(user.getProfile().toString()));
         }
         if (user == null) {
             // Usuário pendente: retorna uma role temporária
@@ -59,11 +59,11 @@ public class CustomUserDetails implements OAuth2User {
     public String getNome() {
         // Se o usuário existe, pega do banco
         // Se não, pega dos atributos do Google
-        return (user != null) ? user.getNome() : (String) attributes.get("name");
+        return (user != null) ? user.getName() : (String) attributes.get("name");
     }
 
     public InvestorProfile getPerfil() {
-        return (user != null) ? user.getPerfil() : null;
+        return (user != null) ? user.getProfile() : null;
     }
 
     /**
