@@ -31,6 +31,8 @@ public class User {
     private String nome;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private InvestorProfile perfil;
+
+    private boolean completedQuestionnaire = false;
 }

@@ -5,19 +5,14 @@ import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 import com.tcc.auth.security.config.OAuth2SuccessHandler;
-import com.tcc.auth.security.jwt.JwtAuthenticationFilter;
-import com.tcc.auth.security.jwt.JwtUtil;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -28,71 +23,51 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
-    private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService; // use seu serviço concreto se houver
 
-    public SecurityConfig(OAuth2SuccessHandler oAuth2SuccessHandler,
-                          JwtUtil jwtUtil,
-                          UserDetailsService userDetailsService) {
+    public SecurityConfig(OAuth2SuccessHandler oAuth2SuccessHandler) {
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
-        this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
     }
-    
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegRep) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // Ignora CSRF para H2
+            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // H2 console
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/oauth2/**", "/login/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/api/**").authenticated() 
-                .anyRequest().authenticated()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS para CORS
+                .requestMatchers("/oauth2/**", "/login/**", "/h2-console/**").permitAll() // Rotas públicas
+                .requestMatchers("/api/**").authenticated() // Rotas protegidas
+                .anyRequest().authenticated() // Qualquer outra rota também
             )
-            .oauth2Login(oauth -> {
-                oauth.successHandler(oAuth2SuccessHandler);
-                Customizer.withDefaults().customize(oauth);
-            })
+            .oauth2Login(oauth -> oauth
+                .successHandler(oAuth2SuccessHandler) // Handler customizado após login
+            )
             .logout(logout -> logout
                 .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegRep))
+                .deleteCookies("JSESSIONID")
+                .invalidateHttpSession(true)
             );
 
-            // H2 CONFIG //
-            http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
-            http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
-            //////////////
-            
-            http.addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class);
-            
         return http.build();
     }
-    
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Permita a origem do seu frontend
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
-        
-        // Permita os métodos (INCLUINDO OPTIONS)
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Frontend
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
-        // Permita os headers que você usa
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
-        
-        // ISSO É ESSENCIAL PARA AUTENTICAÇÃO
-        configuration.setAllowCredentials(true); 
-        
+        configuration.setAllowCredentials(true); // Essencial para autenticação com cookies/session
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Aplica a todos os paths
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegRep) {
         OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
-        // Define para qual URL o usuário será redirecionado APÓS o logout no provedor
-        successHandler.setPostLogoutRedirectUri("http://localhost:8080/");
+        successHandler.setPostLogoutRedirectUri("http://localhost:3000/"); // Redireciona para o frontend
         return successHandler;
     }
 }

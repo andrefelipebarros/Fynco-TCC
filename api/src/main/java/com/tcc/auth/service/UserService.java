@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.model.user.User;
 import com.tcc.auth.repository.UserRepository;
+
 import jakarta.transaction.Transactional;
 
 @Service
@@ -18,29 +19,23 @@ public class UserService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    @Transactional
-    public User saveOrUpdateByEmail(String email, String nome, InvestorProfile perfil) {
-        Optional<User> opt = usuarioRepository.findByEmail(email);
+    public Optional<User> findByEmail(String email) {
+        return usuarioRepository.findByEmail(email);
+    }
 
-        if (opt.isPresent()) {
-            User user = opt.get();
-            user.setNome(nome != null ? nome : user.getNome());
-            // atualiza perfil somente se vier não-nulo (se quiser forçar atualização, ajuste aqui)
-            if (perfil != null) {
-                user.setPerfil(perfil);
-            }
-            return usuarioRepository.save(user);
-        } else {
-            // Se for novo usuário, perfil é obrigatório (você quer só criar após questionário)
-            if (perfil == null) {
-                throw new IllegalArgumentException("Perfil é obrigatório para criação de novos usuários.");
-            }
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setNome(nome);
-            newUser.setPerfil(perfil);
-            return usuarioRepository.save(newUser);
+    @Transactional
+    public User save(User user) {
+        return usuarioRepository.save(user);
+    }
+
+    @Transactional
+    public void completeQuestionnaire(String email, InvestorProfile profile) {
+        Optional<User> optionalUser = usuarioRepository.findByEmail(email);
+        if(optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            user.setPerfil(profile);
+            user.setCompletedQuestionnaire(true);
+            usuarioRepository.save(user);
         }
     }
-    
 }
