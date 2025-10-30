@@ -23,16 +23,23 @@ public class UserService {
         Optional<User> opt = usuarioRepository.findByEmail(email);
 
         if (opt.isPresent()) {
-            User u = opt.get();
-            u.setNome(nome);
-            u.setPerfil(perfil);
-            return usuarioRepository.save(u);
+            User user = opt.get();
+            user.setNome(nome != null ? nome : user.getNome());
+            // atualiza perfil somente se vier não-nulo (se quiser forçar atualização, ajuste aqui)
+            if (perfil != null) {
+                user.setPerfil(perfil);
+            }
+            return usuarioRepository.save(user);
         } else {
-            User novo = new User();
-            novo.setEmail(email);
-            novo.setNome(nome);
-            novo.setPerfil(perfil);
-            return usuarioRepository.save(novo);
+            // Se for novo usuário, perfil é obrigatório (você quer só criar após questionário)
+            if (perfil == null) {
+                throw new IllegalArgumentException("Perfil é obrigatório para criação de novos usuários.");
+            }
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setNome(nome);
+            newUser.setPerfil(perfil);
+            return usuarioRepository.save(newUser);
         }
     }
     

@@ -1,0 +1,18 @@
+### GET status usando sessão do navegador
+GET http://localhost:8080/api/user/status
+Accept: application/json
+Cookie: JSESSIONID=<COLE_AQUI_O_VALOR_DO_JSESSIONID>; XSRF-TOKEN=<COLE_SE_TIVER>
+
+###
+
+### POST profile (usando mesma sessão + CSRF)
+POST http://localhost:8080/api/user/profile
+Content-Type: application/json
+Accept: application/json
+Cookie: JSESSIONID=<COLE_AQUI_O_VALOR_DO_JSESSIONID>; XSRF-TOKEN=<COLE_SE_TIVER>
+X-XSRF-TOKEN: <COLE_AQUI_O_VALOR_DO_XSRF-TOKEN>
+
+{
+  "nome": "João da Silva",
+  "perfil": "INVESTOR"
+}
