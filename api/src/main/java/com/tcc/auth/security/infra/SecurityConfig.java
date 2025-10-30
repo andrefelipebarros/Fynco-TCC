@@ -12,7 +12,13 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
 import com.tcc.auth.security.config.OAuth2SuccessHandler;
+import com.tcc.auth.security.jwt.JwtAuthenticationFilter;
+import com.tcc.auth.security.jwt.JwtUtil;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -22,9 +28,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService; // use seu serviço concreto se houver
 
-    public SecurityConfig(OAuth2SuccessHandler oAuth2SuccessHandler) {
+    public SecurityConfig(OAuth2SuccessHandler oAuth2SuccessHandler,
+                          JwtUtil jwtUtil,
+                          UserDetailsService userDetailsService) {
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
     }
     
     @Bean
@@ -50,8 +62,10 @@ public class SecurityConfig {
             http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
             http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
             //////////////
+            
+            http.addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class);
+            
         return http.build();
-
     }
     
     @Bean
@@ -75,7 +89,6 @@ public class SecurityConfig {
         return source;
     }
 
-    //
     private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegRep) {
         OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
         // Define para qual URL o usuário será redirecionado APÓS o logout no provedor
