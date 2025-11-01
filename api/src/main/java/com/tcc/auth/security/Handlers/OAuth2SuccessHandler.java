@@ -1,4 +1,4 @@
-package com.tcc.auth.security.config;
+package com.tcc.auth.security.Handlers;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;

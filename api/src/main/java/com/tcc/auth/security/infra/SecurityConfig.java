@@ -8,11 +8,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.tcc.auth.security.config.OAuth2SuccessHandler;
+import com.tcc.auth.security.Handlers.CustomLogoutSuccessHandler;
+import com.tcc.auth.security.Handlers.OAuth2SuccessHandler;
 import com.tcc.auth.service.UserService;
 
 import org.springframework.web.cors.CorsConfiguration;
@@ -31,15 +33,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             ClientRegistrationRepository clientRegRep,
+            OAuth2AuthorizedClientService authorizedClientService,
             OAuth2SuccessHandler oAuth2SuccessHandler) throws Exception {
 
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+            .csrf(csrf -> csrf.disable())
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/oauth2/**", "/login/**", "/h2-console/**").permitAll()
+                .requestMatchers("/oauth2/**", "/login/**").permitAll()
+                .requestMatchers("/questionnaire/**").authenticated()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
@@ -47,9 +51,13 @@ public class SecurityConfig {
                 .successHandler(oAuth2SuccessHandler)
             )
             .logout(logout -> logout
-                .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegRep))
-                .deleteCookies("JSESSIONID")
+                .logoutUrl("/logout") // POST por padrão
+                .logoutSuccessHandler(new CustomLogoutSuccessHandler(clientRegRep, authorizedClientService, "http://localhost:3000/")) 
                 .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+
             );
 
         return http.build();
@@ -71,12 +79,5 @@ public class SecurityConfig {
     @Bean
     public OAuth2SuccessHandler oAuth2SuccessHandler(UserService userService) {
         return new OAuth2SuccessHandler(userService);
-    }
-
-    private OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegRep) {
-        OidcClientInitiatedLogoutSuccessHandler successHandler =
-            new OidcClientInitiatedLogoutSuccessHandler(clientRegRep);
-        successHandler.setPostLogoutRedirectUri("http://localhost:3000/");
-        return successHandler;
     }
 }
