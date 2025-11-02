@@ -39,7 +39,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             existing = userService.findByEmail(email);
         }
 
-        boolean completed = existing.map(User::getCompletedQuestionnaire).orElse(false);
+        boolean completed = existing.map(User::isCompletedQuestionnaire).orElse(false);
         String redirect = completed ? "/dashboard" : "/questionnaire";
 
         response.setContentType("text/html;charset=UTF-8");
