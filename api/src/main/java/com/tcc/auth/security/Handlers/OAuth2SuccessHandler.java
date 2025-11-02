@@ -10,11 +10,13 @@ import com.tcc.auth.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Optional;
 
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService;
+    private final String frontendOrigin = "http://localhost:3000";
 
     public OAuth2SuccessHandler(UserService userService) {
         this.userService = userService;
@@ -37,6 +39,30 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             userService.save(newUser);
         }
 
-        response.sendRedirect("/questionnaire"); // redireciona para questionário
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = response.getWriter();
+
+        String html = "<!doctype html><html><head><meta charset='utf-8'><title>Login success</title></head><body>" +
+                "<script>" +
+                "  (function(){ " +
+                "    try {" +
+                "      var frontend = '" + frontendOrigin + "'; " +
+                "      if (window.opener) {" +
+                "        window.opener.postMessage({ type: 'OAUTH_SUCCESS', redirect: '/questionnaire' }, frontend);" +
+                "        window.close();" +
+                "      } else {" +
+                "        // fallback - se não houver opener, redireciona o próprio popup para o frontend" +
+                "        window.location.href = frontend + '/questionnaire';" +
+                "      }" +
+                "    } catch (e) {" +
+                "      console.error(e);" +
+                "      window.location.href = '" + frontendOrigin + "/questionnaire';" +
+                "    }" +
+                "  })();" +
+                "</script>" +
+                "</body></html>";
+
+        out.write(html);
+        out.flush();
     }
 }
