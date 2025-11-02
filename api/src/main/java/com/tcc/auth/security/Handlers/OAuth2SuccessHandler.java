@@ -32,48 +32,38 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         Optional<User> existing = userService.findByEmail(email);
         if (existing.isEmpty()) {
-            // Cria usuário sem nome e perfil inicialmente (usando construtor padrão + setters)
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setCompletedQuestionnaire(false);
             userService.save(newUser);
+            existing = userService.findByEmail(email);
         }
 
-        boolean completed = false;
-        if (existing.isPresent()) {
-            Boolean comp = existing.get().isCompletedQuestionnaire();
-            completed = Boolean.TRUE.equals(comp);
-        }
-
+        boolean completed = existing.map(User::getCompletedQuestionnaire).orElse(false);
         String redirect = completed ? "/dashboard" : "/questionnaire";
 
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
-        String html = "<!doctype html><html><head><meta charset='utf-8'><title>Login success</title></head><body>"
-                + "<script>"
-                + "  (function(){"
-                + "    try {"
-                + "      var frontend = '" + frontendOrigin + "';"
-                + "      var redirect = '" + redirect + "';"
-                + "      if (window.opener) {"
-                + "        // informa o opener sobre sucesso e destino, usando targetOrigin seguro"
-                + "        window.opener.postMessage({ type: 'OAUTH_SUCCESS', redirect: redirect }, frontend);"
-                + "        // tenta fechar o popup"
-                + "        window.close();"
-                + "      } else {"
-                + "        // fallback: se não houver opener, redireciona o próprio popup para o frontend"
-                + "        window.location.href = frontend + redirect;"
-                + "      }"
-                + "    } catch (e) {"
-                + "      console.error(e);"
-                + "      window.location.href = '" + frontendOrigin + redirect + "';"
-                + "    }"
-                + "  })();"
-                + "</script>"
-                + "</body></html>";
-
-        out.write(html);
+        out.write("<!doctype html><html><head><meta charset='utf-8'><title>Login success</title></head><body>");
+        out.write("<script>");
+        out.write("  (function(){");
+        out.write("    try {");
+        out.write("      var target = '" + frontendOrigin + "';");
+        out.write("      if (window.opener) {");
+        out.write("        window.opener.postMessage({ type: 'OAUTH_SUCCESS', redirect: '" + redirect + "' }, target);");
+        out.write("        // tenta fechar a própria janela (o navegador geralmente permite fechar janelas abertas por script)");
+        out.write("        window.close();");
+        out.write("      } else {");
+        out.write("        window.location.href = target + '" + redirect + "';");
+        out.write("      }");
+        out.write("    } catch (e) {");
+        out.write("      console.error(e);");
+        out.write("      try { window.location.href = '" + frontendOrigin + redirect + "'; } catch (ex) { /* nada */ }");
+        out.write("    }");
+        out.write("  })();");
+        out.write("</script>");
+        out.write("</body></html>");
         out.flush();
     }
 }
