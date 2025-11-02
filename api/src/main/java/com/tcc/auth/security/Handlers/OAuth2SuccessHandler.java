@@ -39,28 +39,39 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             userService.save(newUser);
         }
 
+        boolean completed = false;
+        if (existing.isPresent()) {
+            Boolean comp = existing.get().isCompletedQuestionnaire();
+            completed = Boolean.TRUE.equals(comp);
+        }
+
+        String redirect = completed ? "/dashboard" : "/questionnaire";
+
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
-        String html = "<!doctype html><html><head><meta charset='utf-8'><title>Login success</title></head><body>" +
-                "<script>" +
-                "  (function(){ " +
-                "    try {" +
-                "      var frontend = '" + frontendOrigin + "'; " +
-                "      if (window.opener) {" +
-                "        window.opener.postMessage({ type: 'OAUTH_SUCCESS', redirect: '/questionnaire' }, frontend);" +
-                "        window.close();" +
-                "      } else {" +
-                "        // fallback - se não houver opener, redireciona o próprio popup para o frontend" +
-                "        window.location.href = frontend + '/questionnaire';" +
-                "      }" +
-                "    } catch (e) {" +
-                "      console.error(e);" +
-                "      window.location.href = '" + frontendOrigin + "/questionnaire';" +
-                "    }" +
-                "  })();" +
-                "</script>" +
-                "</body></html>";
+        String html = "<!doctype html><html><head><meta charset='utf-8'><title>Login success</title></head><body>"
+                + "<script>"
+                + "  (function(){"
+                + "    try {"
+                + "      var frontend = '" + frontendOrigin + "';"
+                + "      var redirect = '" + redirect + "';"
+                + "      if (window.opener) {"
+                + "        // informa o opener sobre sucesso e destino, usando targetOrigin seguro"
+                + "        window.opener.postMessage({ type: 'OAUTH_SUCCESS', redirect: redirect }, frontend);"
+                + "        // tenta fechar o popup"
+                + "        window.close();"
+                + "      } else {"
+                + "        // fallback: se não houver opener, redireciona o próprio popup para o frontend"
+                + "        window.location.href = frontend + redirect;"
+                + "      }"
+                + "    } catch (e) {"
+                + "      console.error(e);"
+                + "      window.location.href = '" + frontendOrigin + redirect + "';"
+                + "    }"
+                + "  })();"
+                + "</script>"
+                + "</body></html>";
 
         out.write(html);
         out.flush();
