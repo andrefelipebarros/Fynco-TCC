@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.model.user.User;
+import com.tcc.auth.model.user.dto.UserStatusResponse;
 import com.tcc.auth.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -38,5 +39,17 @@ public class UserService {
             user.setCompletedQuestionnaire(true);
             userRepository.save(user);
         }
+    }
+
+    public UserStatusResponse getUserStatusByEmail(String email) {
+        return userRepository.findByEmail(email)
+            .map(user -> new UserStatusResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getProfile(),
+                user.isCompletedQuestionnaire()
+            ))
+            .orElse(new UserStatusResponse(null, email, null, null, false));
     }
 }
