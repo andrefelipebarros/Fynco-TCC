@@ -52,7 +52,7 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutUrl("/logout") // POST por padrão
-                .logoutSuccessHandler(new CustomLogoutSuccessHandler(clientRegRep, authorizedClientService, "http://localhost:3000/")) 
+                .logoutSuccessHandler(new CustomLogoutSuccessHandler(clientRegRep, authorizedClientService, "https://fynco.netlify.app/")) 
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
                 .deleteCookies("JSESSIONID")
