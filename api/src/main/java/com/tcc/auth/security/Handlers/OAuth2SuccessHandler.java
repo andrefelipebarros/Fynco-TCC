@@ -16,7 +16,7 @@ import java.util.Optional;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService;
-    private final String frontendOrigin = "http://localhost:3000";
+    private final String frontendOrigin = "https://fynco.netlify.app";
 
     public OAuth2SuccessHandler(UserService userService) {
         this.userService = userService;
