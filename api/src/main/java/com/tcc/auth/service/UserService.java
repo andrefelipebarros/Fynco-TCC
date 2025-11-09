@@ -8,16 +8,19 @@ import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.model.user.User;
 import com.tcc.auth.model.user.dto.UserStatusResponse;
 import com.tcc.auth.repository.UserRepository;
-
+import com.tcc.auth.service.EmailService;
+    
 import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
-
+    
+    private final EmailService emailService;
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     public Optional<User> findByEmail(String email) {
@@ -38,6 +41,7 @@ public class UserService {
             user.setProfile(profile);
             user.setCompletedQuestionnaire(true);
             userRepository.save(user);
+            emailService.sendProfileConfirmationEmail(email, name, profile);
         }
     }
 
