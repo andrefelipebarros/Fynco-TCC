@@ -8,7 +8,6 @@ import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.model.user.User;
 import com.tcc.auth.model.user.dto.UserStatusResponse;
 import com.tcc.auth.repository.UserRepository;
-import com.tcc.auth.service.EmailService;
     
 import jakarta.transaction.Transactional;
 
