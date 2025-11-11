@@ -26,7 +26,6 @@ public class EmailService {
         this.javaMailSender = javaMailSender;
     }
 
-    @Async
     public void sendProfileConfirmationEmail(String toEmail, String name, InvestorProfile profile) {
         logger.info("Entrou em sendProfileConfirmationEmail para {}", toEmail);
 
