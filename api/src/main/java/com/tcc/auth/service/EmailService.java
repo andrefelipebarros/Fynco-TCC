@@ -3,15 +3,14 @@ package com.tcc.auth.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.tcc.auth.model.user.InvestorProfile;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 @Service
@@ -20,7 +19,7 @@ public class EmailService {
 
     private final JavaMailSender javaMailSender;
 
-    @Value("${MAIL_SMTP_USERNAME}")
+    @Value("${spring.mail.username}")
     private String mailFrom;
 
     public EmailService(JavaMailSender javaMailSender) {
@@ -29,9 +28,16 @@ public class EmailService {
 
     @Async
     public void sendProfileConfirmationEmail(String toEmail, String name, InvestorProfile profile) {
+        logger.info("Entrou em sendProfileConfirmationEmail para {}", toEmail);
+
         if (toEmail == null || toEmail.isBlank()) {
             logger.warn("E-mail de destino vazio. Abortando envio.");
             return;
+        }
+
+        if (javaMailSender instanceof JavaMailSenderImpl) {
+            JavaMailSenderImpl impl = (JavaMailSenderImpl) javaMailSender;
+            logger.info("Mail sender host={}, port={}, username={}", impl.getHost(), impl.getPort(), impl.getUsername());
         }
 
         try {
@@ -40,15 +46,13 @@ public class EmailService {
 
             helper.setTo(toEmail);
             helper.setFrom(mailFrom);
-            helper.setSubject("Seu perfil de investidor foi definido!");
+            helper.setSubject("Teste de e-mail - diagnóstico");
             helper.setText(buildHtmlEmail(name, profile.toString()), true);
 
             javaMailSender.send(message);
-            logger.info("E-mail enviado para {}", toEmail);
-        } catch (MessagingException | MailException e) {
-            logger.error("Erro ao enviar e-mail para {}: ", toEmail, e);
+            logger.info("E-mail enviado (sucesso) para {}", toEmail);
         } catch (Exception e) {
-            logger.error("Erro inesperado ao enviar e-mail: ", e);
+            logger.error("Erro ao enviar e-mail para {}: ", toEmail, e);
         }
     }
 
