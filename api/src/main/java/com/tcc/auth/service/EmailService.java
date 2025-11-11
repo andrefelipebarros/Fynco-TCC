@@ -3,55 +3,60 @@ package com.tcc.auth.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import com.tcc.auth.model.user.InvestorProfile;
-
-import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender javaMailSender;
+    private final SendGrid sendGrid;
 
     @Value("${spring.mail.username}")
     private String mailFrom;
 
-    public EmailService(JavaMailSender javaMailSender) {
-        this.javaMailSender = javaMailSender;
+    public EmailService(@Value("${SENDGRID_API_KEY}") String sendGridApiKey) {
+        this.sendGrid = new SendGrid(sendGridApiKey);
     }
 
     public void sendProfileConfirmationEmail(String toEmail, String name, InvestorProfile profile) {
-        logger.info("Entrou em sendProfileConfirmationEmail para {}", toEmail);
+        logger.info("Enviando e-mail via SendGrid para {}", toEmail);
 
         if (toEmail == null || toEmail.isBlank()) {
             logger.warn("E-mail de destino vazio. Abortando envio.");
             return;
         }
 
-        if (javaMailSender instanceof JavaMailSenderImpl) {
-            JavaMailSenderImpl impl = (JavaMailSenderImpl) javaMailSender;
-            logger.info("Mail sender host={}, port={}, username={}", impl.getHost(), impl.getPort(), impl.getUsername());
-        }
-
         try {
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            Email from = new Email(mailFrom);
+            Email to = new Email(toEmail);
+            String subject = "Seu perfil de investidor foi definido!";
+            String htmlContent = buildHtmlEmail(name, profile.toString());
+            Content content = new Content("text/html", htmlContent);
 
-            helper.setTo(toEmail);
-            helper.setFrom(mailFrom);
-            helper.setSubject("Teste de e-mail - diagnóstico");
-            helper.setText(buildHtmlEmail(name, profile.toString()), true);
+            Mail mail = new Mail(from, subject, to, content);
 
-            javaMailSender.send(message);
-            logger.info("E-mail enviado (sucesso) para {}", toEmail);
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sendGrid.api(request);
+            int statusCode = response.getStatusCode();
+
+            if (statusCode >= 200 && statusCode < 300) {
+                logger.info("E-mail enviado com sucesso para {} (status={})", toEmail, statusCode);
+            } else {
+                logger.error("Falha ao enviar e-mail via SendGrid. Status={}, Body={}", statusCode, response.getBody());
+            }
+
         } catch (Exception e) {
-            logger.error("Erro ao enviar e-mail para {}: ", toEmail, e);
+            logger.error("Erro ao enviar e-mail via SendGrid: ", e);
         }
     }
 
