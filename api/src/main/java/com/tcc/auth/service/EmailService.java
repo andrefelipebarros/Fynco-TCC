@@ -19,6 +19,9 @@ public class EmailService {
 
     private final JavaMailSender javaMailSender;
 
+    @Value("${spring.mail.username}")
+    private String mailFrom;
+
     public EmailService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
@@ -35,7 +38,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
-            helper.setFrom("no-reply@fynco.com");
+            helper.setFrom(mailFrom);
             helper.setSubject("Seu perfil de investidor foi definido!");
             helper.setText(buildHtmlEmail(name, profile.toString()), true);
 
