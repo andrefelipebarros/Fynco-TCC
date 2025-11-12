@@ -4,11 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.sendgrid.*;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
+import com.sendgrid.helpers.mail.objects.Personalization;
 import com.tcc.auth.model.user.InvestorProfile;
 
 @Service
@@ -17,7 +19,7 @@ public class EmailService {
 
     private final SendGrid sendGrid;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.username:}")
     private String mailFrom;
 
     public EmailService(@Value("${SENDGRID_API_KEY}") String sendGridApiKey) {
@@ -31,6 +33,10 @@ public class EmailService {
             logger.warn("E-mail de destino vazio. Abortando envio.");
             return;
         }
+        if (!StringUtils.hasText(mailFrom)) {
+            logger.error("Remetente (spring.mail.username) não configurado. Abortando envio.");
+            return;
+        }
 
         try {
             Email from = new Email(mailFrom);
@@ -39,7 +45,15 @@ public class EmailService {
             String htmlContent = buildHtmlEmail(name, profile.toString());
             Content content = new Content("text/html", htmlContent);
 
-            Mail mail = new Mail(from, subject, to, content);
+            // Montagem robusta do Mail usando Personalization
+            Mail mail = new Mail();
+            mail.setFrom(from);
+            mail.setSubject(subject);
+            mail.addContent(content);
+
+            Personalization personalization = new Personalization();
+            personalization.addTo(to);
+            mail.addPersonalization(personalization);
 
             Request request = new Request();
             request.setMethod(Method.POST);
@@ -52,7 +66,7 @@ public class EmailService {
             if (statusCode >= 200 && statusCode < 300) {
                 logger.info("E-mail enviado com sucesso para {} (status={})", toEmail, statusCode);
             } else {
-                logger.error("Falha ao enviar e-mail via SendGrid. Status={}, Body={}", statusCode, response.getBody());
+                logger.error("Falha ao enviar e-mail via SendGrid. Status={}", statusCode);
             }
 
         } catch (Exception e) {
@@ -61,58 +75,40 @@ public class EmailService {
     }
 
     private String buildHtmlEmail(String name, String profile) {
-        return """
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmação de Inscrição - Fynco</title>
-  <style>
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-    table { border-collapse: collapse !important; }
-    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
-  </style>
-</head>
-<body style="background-color: #F3F4F6; font-family: sans-serif; margin: 0 !important; padding: 0 !important;">
-  
-  <div style="max-width: 32rem; margin-left: auto; margin-right: auto; background-color: #FFFFFF; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); border-radius: 0.5rem; overflow: hidden; margin-top: 2.5rem;">
-    
-    <div style="background-color: #1E2A5E; color: #FFFFFF; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-      <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-5N9kRcdyl478ovIeXeYOGoH7DyEIVu.png" alt="Fynco Logo" style="height: 2.5rem;">
-      <div style="text-align: right; font-size: 0.875rem; line-height: 1.25rem;">
-        <p style="font-weight: 500; margin: 0;">contatofynco@gmail.com</p>
-      </div>
-    </div>
+        // HTML limpo e compatível; use a URL da logo que passou
+        String logoUrl = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-5N9kRcdyl478ovIeXeYOGoH7DyEIVu.png";
 
-    <div style="padding: 2rem; color: #1F2937;">
-      <h1 style="font-size: 1.875rem; line-height: 2.25rem; font-weight: 600; color: #1E2A5E; margin-bottom: 0.75rem; margin-top: 0;">
-        Olá, %s!
-      </h1>
-      <p style="color: #4B5563; margin-bottom: 1rem; margin-top: 0;">
-        Obrigado por completar nosso questionário. Seu perfil de investidor foi definido como:
-      </p>
-      <div style="background-color: #F0FDF4; border: 1px solid #38B000; padding: 1rem; border-radius: 0.375rem; text-align: center; margin-bottom: 1.5rem;">
-        <h2 style="color: #38B000; margin: 0;">%s</h2>
-      </div>
-      <p style="color: #4B5563; margin-top: 2rem; text-align: center; margin-bottom: 0;">
-        Agora você já pode acessar seu dashboard e começar a explorar.
-      </p>
-      <p style="color: #4B5563; margin-top: 2rem; text-align: center; font-style: italic; margin-bottom: 0;">
-        "Capacitando decisões inteligentes de investimento."
-      </p>
-    </div>
+        String html = ""
+            + "<html lang='pt-BR'>"
+            + "<body style='background-color:#F3F4F6;font-family:Arial,sans-serif;margin:0;padding:0;'>"
+            + "  <div style='max-width:600px;margin:20px auto;background:#fff;border-radius:8px;overflow:hidden;'>"
+            + "    <div style='background:#1E2A5E;padding:20px;display:flex;align-items:center;justify-content:space-between;'>"
+            + "      <img src='" + logoUrl + "' alt='Fynco' style='height:40px;display:block;border:0;'>"
+            + "      <div style='color:#fff;font-size:14px;'>contatofynco@gmail.com</div>"
+            + "    </div>"
+            + "    <div style='padding:24px;color:#1F2937;'>"
+            + "      <h1 style='margin:0 0 12px 0;font-size:20px;color:#1E2A5E;'>Olá, " + escapeHtml(name) + "!</h1>"
+            + "      <p style='margin:0 0 12px 0;color:#4B5563;'>Obrigado por completar nosso questionário. Seu perfil de investidor foi definido como:</p>"
+            + "      <div style='background:#F0FDF4;border:1px solid #38B000;padding:12px;border-radius:6px;text-align:center;margin-bottom:16px;'>"
+            + "        <strong style='color:#0f7a2e;font-size:18px;'>" + escapeHtml(profile) + "</strong>"
+            + "      </div>"
+            + "      <p style='color:#4B5563;margin:0 0 8px 0'>Agora você já pode acessar seu dashboard e começar a explorar.</p>"
+            + "      <p style='color:#4B5563;font-style:italic;margin:0'>&quot;Capacitando decisões inteligentes de investimento.&quot;</p>"
+            + "    </div>"
+            + "    <div style='background:#1E2A5E;color:#fff;padding:16px;text-align:center;font-size:13px;'>"
+            + "      <img src='" + logoUrl + "' alt='Icon' style='height:24px;display:block;margin:0 auto 8px auto;opacity:0.9;border:0;'>"
+            + "      <div>© 2025 Fynco. Todos os direitos reservados.</div>"
+            + "    </div>"
+            + "  </div>"
+            + "</body>"
+            + "</html>";
+        return html;
+    }
 
-    <div style="background-color: #1E2A5E; color: #FFFFFF; padding: 1.5rem; text-align: center; font-size: 0.875rem; line-height: 1.25rem;">
-      <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-5N9kRcdyl478ovIeXeYOGoH7DyEIVu.png" alt="Fynco Icon" style="height: 2rem; margin-left: auto; margin-right: auto; margin-bottom: 0.75rem; opacity: 0.9;">
-      <p style="margin: 0;">© 2025 Fynco. Todos os direitos reservados.</p>
-    </div>
-
-  </div>
-</body>
-</html>
-""".formatted(name, profile);
+    // Pequena função para escapar caracteres HTML básicos
+    private String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
     }
 }
