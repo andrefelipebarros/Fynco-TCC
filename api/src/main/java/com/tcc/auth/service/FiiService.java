@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.tcc.auth.model.fii.Fii;
 import com.tcc.auth.model.fii.dto.FiiResponse;
+import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.repository.FiiRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,13 @@ public class FiiService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public List<FiiResponse> listarPorPerfil(InvestorProfile perfil) {
+    return fiiRepository.findByPerfil(perfil)
+            .stream()
+            .map(this::toResponse)
+            .toList();
     }
 
     private FiiResponse toResponse(Fii fii) {

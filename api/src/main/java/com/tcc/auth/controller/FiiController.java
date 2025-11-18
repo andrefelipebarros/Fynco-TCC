@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.tcc.auth.model.fii.dto.FiiHistoryResponse;
 import com.tcc.auth.model.fii.dto.FiiResponse;
+import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.service.FiiHistoryService;
 import com.tcc.auth.service.FiiService;
 
@@ -25,6 +26,11 @@ public class FiiController {
     public ResponseEntity<List<FiiResponse>> listarTodos() {
         List<FiiResponse> fiis = fiiService.listarTodos();
         return ResponseEntity.ok(fiis);
+    }
+    
+    @GetMapping("/perfil/{perfil}")
+    public ResponseEntity<List<FiiResponse>> listarPorPerfil(@PathVariable InvestorProfile perfil) {
+        return ResponseEntity.ok(fiiService.listarPorPerfil(perfil));
     }
 
     @GetMapping("/{identifier}/history")

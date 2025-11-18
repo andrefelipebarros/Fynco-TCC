@@ -15,14 +15,14 @@ public class FiiHistoryService {
     private final FiiHistoryRepository repository;
 
     public List<FiiHistoryResponse> listarPorId(Integer id) {
-        return repository.findByFii_IdOrder(id)
+        return repository.findByFii_Id(id)
                 .stream()
                 .map(h -> new FiiHistoryResponse(h.getId(), h.getDataPagamento(), h.getValor()))
                 .collect(Collectors.toList());
     }
 
     public List<FiiHistoryResponse> listarPorTicker(String ticker) {
-        return repository.findByFii_TickerIgnoreCaseOrder(ticker)
+        return repository.findByFii_TickerIgnoreCase(ticker)
                 .stream()
                 .map(h -> new FiiHistoryResponse(h.getId(), h.getDataPagamento(), h.getValor()))
                 .collect(Collectors.toList());
