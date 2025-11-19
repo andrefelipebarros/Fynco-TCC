@@ -8,6 +8,7 @@ public record FiiResponse(
     String nome,
     String setor,
     Double precoAtual,
+    Double precoAnterior,
     Double dy,
     Double pVp,
     InvestorProfile perfil

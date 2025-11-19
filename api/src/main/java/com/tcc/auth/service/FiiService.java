@@ -38,6 +38,7 @@ public class FiiService {
             fii.getNome(),
             fii.getSetor(),
             fii.getPrecoAtual(),
+            fii.getPrecoAnterior(),
             fii.getDy(),
             fii.getPVp(),
             fii.getPerfil()

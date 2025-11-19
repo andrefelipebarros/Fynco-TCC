@@ -7,6 +7,7 @@ public record FiiRequest(
     String nome,
     String setor,
     Double precoAtual,
+    Double precoAnterior,
     Double dy,
     Double pVp,
     InvestorProfile perfil
