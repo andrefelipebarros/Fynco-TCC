@@ -16,10 +16,12 @@ public class UserService {
     
     private final EmailService emailService;
     private final UserRepository userRepository;
+    private final EmailAuthorizationRepository emailAuthRepository;
 
-    public UserService(UserRepository userRepository, EmailService emailService) {
+    public UserService(UserRepository userRepository, EmailService emailService, EmailAuthorizationRepository emailAuthRepository) {
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.emailAuthRepository = emailAuthRepository;
     }
 
     public Optional<User> findByEmail(String email) {
@@ -40,7 +42,14 @@ public class UserService {
             user.setProfile(profile);
             user.setCompletedQuestionnaire(true);
             userRepository.save(user);
-            emailService.sendProfileConfirmationEmail(email, name, profile);
+            
+            EmailAuthorization auth = ensureEmailAuthorizationExists(user);
+
+            if (auth.isCanSendEmail()) {
+                emailService.sendProfileConfirmationEmail(email, name, profile);
+            } else {
+                System.out.println("Envio de e-mail bloqueado para o usuário: " + email);
+            }
         }
     }
 
@@ -54,5 +63,15 @@ public class UserService {
                 user.isCompletedQuestionnaire()
             ))
             .orElse(new UserStatusResponse(null, email, null, null, false));
+    }
+
+     private EmailAuthorization ensureEmailAuthorizationExists(User user) {
+        return emailAuthRepository.findByUser(user)
+                .orElseGet(() -> {
+                    EmailAuthorization newAuth = new EmailAuthorization();
+                    newAuth.setUser(user);
+                    newAuth.setCanSendEmail(true);
+                    return emailAuthRepository.save(newAuth);
+                });
     }
 }
