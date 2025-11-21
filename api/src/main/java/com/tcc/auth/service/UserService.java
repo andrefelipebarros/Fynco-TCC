@@ -4,11 +4,14 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.tcc.auth.model.user.InvestorProfile;
 import com.tcc.auth.model.user.User;
+import com.tcc.auth.model.user.InvestorProfile;
+import com.tcc.auth.model.user.EmailAuthorization;
 import com.tcc.auth.model.user.dto.UserStatusResponse;
+
 import com.tcc.auth.repository.UserRepository;
-    
+import com.tcc.auth.repository.EmailAuthorizationRepository;
+
 import jakarta.transaction.Transactional;
 
 @Service
