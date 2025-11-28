@@ -56,6 +56,26 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public void updateEmailPreference(String email, boolean canSendEmail) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        EmailAuthorization authorization = ensureEmailAuthorizationExists(user);
+
+        authorization.setCanSendEmail(canSendEmail);
+        emailAuthRepository.save(authorization);
+    }
+
+    public boolean getEmailPreference(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        
+        return emailAuthRepository.findByUser(user)
+                .map(EmailAuthorization::isCanSendEmail)
+                .orElse(true); 
+    }
+
     public UserStatusResponse getUserStatusByEmail(String email) {
         return userRepository.findByEmail(email)
             .map(user -> new UserStatusResponse(
