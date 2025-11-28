@@ -1,38 +1,83 @@
 package com.tcc.auth.controller;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.tcc.auth.model.user.dto.EmailPreferenceRequest;
 import com.tcc.auth.service.NotificationService;
-
+import com.tcc.auth.service.UserService;
 import nl.martijndwars.webpush.Subscription;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
+@RequestMapping("/api/notifications")
 public class NotificationController {
 
     private final NotificationService notificationService;
-    // ATENÇÃO: Em produção, use um Banco de Dados para persistir as inscrições!
-    private final ConcurrentHashMap<String, Subscription> subscriptions = new ConcurrentHashMap<>();
+    private final UserService userService;
 
-    public NotificationController(NotificationService notificationService) {
+    private final ConcurrentHashMap<String, Subscription> pushSubscriptions = new ConcurrentHashMap<>();
+
+    public NotificationController(NotificationService notificationService, UserService userService) {
         this.notificationService = notificationService;
+        this.userService = userService;
     }
 
-    @PostMapping("/subscribe")
-    public void subscribe(@RequestBody Subscription subscription) {
-        System.out.println("Subscribed: " + subscription.endpoint);
-        // O ideal é associar a inscrição a um ID de usuário
-        this.subscriptions.put(subscription.endpoint, subscription);
+    // --- ÁREA DE WEB PUSH ---
+
+    @PostMapping("/subscribe-push")
+    public void subscribeToPush(@RequestBody Subscription subscription) {
+        System.out.println("Subscribed to Push: " + subscription.endpoint);
+        this.pushSubscriptions.put(subscription.endpoint, subscription);
     }
 
-    @PostMapping("/send-notification")
-    public void sendNotificationToAll() {
-        String payload = "{\"title\":\"Olá do Spring Boot!\",\"body\":\"Esta é uma notificação de teste.\"}";
-
-        subscriptions.values().forEach(subscription -> {
-            notificationService.sendNotification(subscription, payload);
+    @PostMapping("/send-push-test")
+    public void sendPushToAll() {
+        String payload = "{\"title\":\"Fynco Alert\",\"body\":\"Teste de notificação push!\"}";
+        pushSubscriptions.values().forEach(subscription -> {
+            try {
+                notificationService.sendNotification(subscription, payload);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
+    }
+
+    // --- ÁREA DE PREFERÊNCIAS DE EMAIL ---
+
+    @PutMapping("/email-preference")
+    public ResponseEntity<?> updateEmailPreference(
+            @AuthenticationPrincipal OAuth2User oauthUser,
+            @RequestBody EmailPreferenceRequest request) {
+
+        if (oauthUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String email = oauthUser.getAttribute("email");
+        
+        try {
+            userService.updateEmailPreference(email, request.enable()); 
+            
+            return ResponseEntity.ok(Map.of("message", "Preferência atualizada: " + request.enable()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/email-preference")
+    public ResponseEntity<?> getEmailPreference(@AuthenticationPrincipal OAuth2User oauthUser) {
+        if (oauthUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String email = oauthUser.getAttribute("email");
+        
+        boolean canSend = userService.getEmailPreference(email);
+
+        return ResponseEntity.ok(Map.of("canSendEmail", canSend));
     }
 }
