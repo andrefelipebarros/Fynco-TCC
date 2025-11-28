@@ -24,7 +24,7 @@ Este projeto foi desenvolvido utilizando as seguintes tecnologias:
 ### Backend & Frameworks
 <p align="left">
   <img src="https://img.shields.io/badge/Java-17+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17+">
-  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring&logoColor=white" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/Spring_Boot-3.5.6-6DB33F?style=for-the-badge&logo=spring&logoColor=white" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white" alt="Spring Security">
   <img src="https://img.shields.io/badge/Hibernate-573626?style=for-the-badge&logo=hibernate&logoColor=white" alt="Hibernate (JPA)">
   <img src="https://img.shields.io/badge/OAuth2-24292E?style=for-the-badge&logo=oauth&logoColor=white" alt="OAuth2">
@@ -40,19 +40,21 @@ Este projeto foi desenvolvido utilizando as seguintes tecnologias:
 <p align="left">
   <img src="https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" alt="Maven">
   <img src="https://img.shields.io/badge/Lombok-AF0E23?style=for-the-badge&logo=lombok&logoColor=white" alt="Lombok">
-  <img src="https://img.shields.io/badge/MapStruct-FF69B4?style=for-the-badge&logo=mapstruct&logoColor=white" alt="MapStruct">
+  <img src="https://img.shields.io/badge/SendGrid-000000?style=for-the-badge&logo=sendgrid&logoColor=white" alt="SendGrid">
 </p>
 
-*(Outras bibliotecas incluem `web-push` para Notificações Push, entre outras gerenciadas pelo Maven.)*
+*(Outras bibliotecas incluem `web-push` para Notificações Push e `Java Mail Sender` gerenciadas pelo Maven.)*
 
 ## ✨ Funcionalidades
 
-- [✅] Autenticação e Autorização de usuários via OAuth2
-- [✅] CRUD de Perfil de Usuário
-- [✅] Listagem de Fundos Imobiliários (FIIs)
-- [✅] Inscrição para Notificações Push
-- [⏳] [Funcionalidade em desenvolvimento, Geração de relatórios
-- [❌] [Funcionalidade planejada, Alertas de dividendos via e-mail
+- [✅] Autenticação e Autorização de usuários via OAuth2 (Google)
+- [✅] CRUD de Perfil de Usuário e Questionário de Investidor
+- [✅] Listagem de Fundos Imobiliários (FIIs) por perfil
+- [✅] Histórico de FIIs (Busca por Ticker ou ID)
+- [✅] Inscrição para Notificações Push (Web Push)
+- [✅] Envio de E-mails (SMTP/SendGrid)
+- [⏳] [Funcionalidade em desenvolvimento] Geração de relatórios
+- [❌] [Funcionalidade planejada] Alertas de dividendos via e-mail
 
 ## 🏁 Como Executar
 
@@ -62,7 +64,7 @@ Siga os passos abaixo para executar o projeto localmente:
 
 - Java JDK 17 ou superior
 - Apache Maven
-- Seu SGBD, PostgreSQL, ou nenhum se estiver usando H2
+- Seu SGBD PostgreSQL (ou H2 para testes)
 
 ### 1. Clonar o Repositório
 
@@ -73,20 +75,28 @@ cd Fynco-TCC
 
 ### 2\. Configurar Variáveis de Ambiente
 
-Se seu projeto usar um arquivo `application.properties` ou `application.yml` que precise de senhas ou chaves de API, configure-as.
+Este projeto utiliza variáveis de ambiente para credenciais sensíveis. Você deve configurá-las no seu sistema operacional ou na sua IDE antes de rodar:
 
-[**Exemplo:** Se você usa um banco de dados externo]
+**Banco de Dados:**
 
-```properties
-# Em src/main/resources/application.properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/fynco_db
-spring.datasource.username=[SEU_USUARIO]
-spring.datasource.password=[SUA_SENHA]
+  - `PGHOST`: Host do banco (ex: localhost)
+  - `PGPORT`: Porta do banco (ex: 5432)
+  - `PGDATABASE`: Nome do banco de dados
+  - `PGUSER`: Usuário do PostgreSQL
+  - `PGPASSWORD`: Senha do PostgreSQL
 
-# Configurações do OAuth2 (ex: Google)
-spring.security.oauth2.client.registration.google.client-id=[SEU_CLIENT_ID]
-spring.security.oauth2.client.registration.google.client-secret=[SEU_CLIENT_SECRET]
-```
+**Autenticação Google (OAuth2):**
+
+  - `G_CLIENT_ID`: Seu Client ID do Google Cloud
+  - `G_CLIENT_PASSWORD`: Seu Client Secret
+
+**Notificações e E-mail:**
+
+  - `VAPID_PUBLIC_KEY`: Chave pública para Web Push
+  - `VAPID_PRIVATE_KEY`: Chave privada para Web Push
+  - `MAIL_SMTP_USERNAME`: E-mail remetente (Gmail)
+  - `MAIL_SMTP_PASSWORD`: Senha de aplicativo do e-mail
+  - `SENDGRID_API_KEY`: API Key do SendGrid
 
 ### 3\. Executar a Aplicação
 
@@ -100,21 +110,23 @@ Você pode executar a aplicação usando o wrapper do Maven:
 ./mvnw spring-boot:run
 ```
 
-A aplicação estará disponível em `http://localhost:8080` (ou a porta que você configurou).
+A aplicação estará disponível em `http://localhost:8080`.
 
 ## ⚡ Endpoints da API
 
 Aqui está uma descrição dos principais endpoints da aplicação, baseados nos controllers do projeto:
 
-| Método | Endpoint | Controller | Descrição | Acesso |
-| :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/fiis` | `FiiController` | Lista todos os Fundos Imobiliários (FIIs). | Privado |
-| `POST` | `/api/user/profile` | `UserController` | Salva ou atualiza o perfil do usuário autenticado. | Privado |
-| `POST` | `/subscribe` | `NotificationController` | Inscreve o cliente (navegador) para receber notificações push. | Privado |
-| `POST` | `/send-notification` | `NotificationController` | [Admin/Debug] Envia uma notificação para todos os clientes inscritos. | Privado |
-
-*(**Nota:** Os endpoints de autenticação, como `/login/oauth2/code/google`, são gerenciados pelo Spring Security e não estão listados aqui.)*
+| Método | Endpoint | Controller | Descrição |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/user/basic` | `BasicUserInfoController` | Retorna nome e perfil do usuário logado. |
+| `GET` | `/api/questionnaire/me` | `UserController` | Retorna o status completo do cadastro do usuário. |
+| `POST` | `/api/questionnaire/submit` | `UserController` | Envia o questionário para definir o perfil (Params: name, profile). |
+| `GET` | `/api/fiis` | `FiiController` | Lista todos os Fundos Imobiliários (FIIs). |
+| `GET` | `/api/fiis/perfil/{perfil}` | `FiiController` | Lista FIIs filtrados pelo perfil (ex: MODERATE). |
+| `GET` | `/api/fiis/{id}/history` | `FiiController` | Busca histórico do FII por ID ou Ticker. |
+| `POST` | `/subscribe` | `NotificationController` | Inscreve o navegador para receber notificações push. |
+| `POST` | `/send-notification` | `NotificationController` | [Admin] Dispara notificação de teste para todos. |
 
 ## 📄 Licença
 
-Este projeto está sob a licença, MIT LICENSE(Temporário). Veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](https://www.google.com/search?q=LICENSE) para mais detalhes.
