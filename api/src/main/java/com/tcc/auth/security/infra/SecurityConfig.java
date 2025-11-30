@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/oauth2/**", "/login/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/notifications/send-push-test").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/notifications/subscribe-push").permitAll()
                 .requestMatchers("/questionnaire/**").authenticated()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
