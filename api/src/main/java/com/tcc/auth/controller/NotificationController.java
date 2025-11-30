@@ -18,12 +18,14 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     private final ConcurrentHashMap<String, Subscription> pushSubscriptions = new ConcurrentHashMap<>();
 
-    public NotificationController(NotificationService notificationService, UserService userService) {
+public NotificationController(NotificationService notificationService, UserService userService, ObjectMapper objectMapper) {
         this.notificationService = notificationService;
         this.userService = userService;
+        this.objectMapper = objectMapper;
     }
 
     // --- ÁREA DE WEB PUSH ---
@@ -36,14 +38,26 @@ public class NotificationController {
 
     @PostMapping("/send-push-test")
     public void sendPushToAll() {
-        String payload = "{\"title\":\"Fynco Alert\",\"body\":\"Teste de notificação push!\"}";
-        pushSubscriptions.values().forEach(subscription -> {
-            try {
-                notificationService.sendNotification(subscription, payload);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("title", "Fynco Alerta 📈");
+        notificationData.put("body", "MXRF11 acabou de anunciar dividendos! Toque para ver.");
+        notificationData.put("icon", "https://fynco.netlify.app/logo-transparente.png");
+        notificationData.put("badge", "https://fynco.netlify.app/fynco-icon.png");
+        notificationData.put("url", "https://fynco.netlify.app/dashboard");
+
+        try {
+            String payload = objectMapper.writeValueAsString(notificationData);
+            
+            pushSubscriptions.values().forEach(subscription -> {
+                try {
+                    notificationService.sendNotification(subscription, payload);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // --- ÁREA DE PREFERÊNCIAS DE EMAIL ---
